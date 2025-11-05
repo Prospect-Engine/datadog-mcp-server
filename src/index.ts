@@ -214,7 +214,7 @@ server.tool(
 
 server.tool(
   "search-logs",
-  "Search logs in Datadog with advanced filtering options. Use filter.query for search terms (e.g., 'service:web-app status:error'), from/to for time ranges (e.g., 'now-15m', 'now'), and sort to order results. Essential for investigating application issues.",
+  "Search logs in Datadog with advanced filtering options. Use filter.query for search terms (supports: 'status:error' for errors, 'service:web-app' for specific service, '@message:*text*' for text search, or combine with AND/OR). Time ranges: 'now-15m', 'now-1h', 'now-1d'. Sort: '-timestamp' for newest first. Essential for investigating application issues.",
   {
     filter: z
       .object({
@@ -269,8 +269,9 @@ server.tool(
           limit: z.number().optional(),
           sort: z
             .object({
-              aggregation: z.string(),
-              order: z.string()
+              type: z.enum(["measure", "alphabetical", "time"]).optional(),
+              aggregation: z.string().optional(),
+              order: z.string().optional()
             })
             .optional()
         })

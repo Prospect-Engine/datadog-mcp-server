@@ -20,7 +20,7 @@ A Model Context Protocol (MCP) server for interacting with the Datadog API.
 
 ## Prerequisites
 
-1. Node.js (version 16 or higher)
+1. Node.js (version 20 or higher, supports Node 20 and 22)
 2. Datadog account with:
    - API key - Found in Organization Settings > API Keys
    - Application key - Found in Organization Settings > Application Keys
