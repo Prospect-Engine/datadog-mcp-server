@@ -16,8 +16,9 @@ type AggregateLogsParams = {
     facet: string;
     limit?: number;
     sort?: {
-      aggregation: string;
-      order: string;
+      type?: "measure" | "alphabetical" | "time";
+      aggregation?: string;
+      order?: string;
     };
   }>;
   options?: {

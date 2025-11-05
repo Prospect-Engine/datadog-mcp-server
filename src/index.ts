@@ -269,8 +269,9 @@ server.tool(
           limit: z.number().optional(),
           sort: z
             .object({
-              aggregation: z.string(),
-              order: z.string()
+              type: z.enum(["measure", "alphabetical", "time"]).optional(),
+              aggregation: z.string().optional(),
+              order: z.string().optional()
             })
             .optional()
         })

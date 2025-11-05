@@ -245,9 +245,10 @@ Get the count of logs grouped by status:
     ],
     "groupBy": [
       {
-        "facet": "@status",
+        "facet": "status",
         "limit": 10,
         "sort": {
+          "type": "measure",
           "aggregation": "count",
           "order": "desc"
         }
@@ -303,9 +304,10 @@ Find which services have the most errors:
     ],
     "groupBy": [
       {
-        "facet": "@service",
+        "facet": "service",
         "limit": 20,
         "sort": {
+          "type": "measure",
           "aggregation": "count",
           "order": "desc"
         }
@@ -336,8 +338,13 @@ Calculate average response times:
     ],
     "groupBy": [
       {
-        "facet": "@http.url_details.path",
-        "limit": 10
+        "facet": "http.url_details.path",
+        "limit": 10,
+        "sort": {
+          "type": "measure",
+          "aggregation": "avg",
+          "order": "desc"
+        }
       }
     ]
   }
