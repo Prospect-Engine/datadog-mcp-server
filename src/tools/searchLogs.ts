@@ -66,9 +66,9 @@ export const searchLogs = {
       };
 
       // Use DD_LOGS_SITE environment variable instead of DD_SITE
-      const apiUrl = `https://${
-        process.env.DD_LOGS_SITE || "datadoghq.com"
-      }/api/v2/logs/events/search`;
+      // Note: API endpoints require the 'api.' subdomain prefix
+      const site = process.env.DD_LOGS_SITE || "datadoghq.com";
+      const apiUrl = `https://api.${site}/api/v2/logs/events/search`;
 
       const headers = {
         "Content-Type": "application/json",
