@@ -42,6 +42,8 @@
     "dist",
     "README.md",
     "EXAMPLES.md",
+    "TESTING.md",
+    "test-error-logs.mjs",
     "LICENSE"
   ],
   "repository": {
