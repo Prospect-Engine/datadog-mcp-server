@@ -1,4 +1,4 @@
-import { client, v2 } from "@datadog/datadog-api-client";
+import { datadogGet, getDatadogApiUrl } from "../utils/httpClient";
 
 type GetIncidentsParams = {
   includeArchived?: boolean;
@@ -8,61 +8,31 @@ type GetIncidentsParams = {
   limit?: number;
 };
 
-let configuration: client.Configuration;
-
 export const getIncidents = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_SITE
-      });
-    }
-
-    // Enable the unstable operation
-    configuration.unstableOperations["v2.listIncidents"] = true;
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: GetIncidentsParams) => {
     try {
       const { includeArchived, pageSize, pageOffset, query, limit } = params;
 
-      const apiInstance = new v2.IncidentsApi(configuration);
+      const queryParams = new URLSearchParams();
+      if (includeArchived !== undefined) queryParams.append("include", "archived");
+      if (pageSize !== undefined) queryParams.append("page[size]", pageSize.toString());
+      if (pageOffset !== undefined) queryParams.append("page[offset]", pageOffset.toString());
+      if (query !== undefined) queryParams.append("filter[query]", query);
 
-      const apiParams: any = {};
+      const apiUrl = `${getDatadogApiUrl("v2")}/incidents${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
 
-      if (includeArchived !== undefined) {
-        apiParams.include_archived = includeArchived;
-      }
-
-      if (pageSize !== undefined) {
-        apiParams.page_size = pageSize;
-      }
-
-      if (pageOffset !== undefined) {
-        apiParams.page_offset = pageOffset;
-      }
-
-      if (query !== undefined) {
-        apiParams.query = query;
-      }
-
-      const response = await apiInstance.listIncidents(apiParams);
+      const response = await datadogGet(apiUrl);
 
       // Apply client-side limit if specified
-      if (limit && response.data && response.data.length > limit) {
-        response.data = response.data.slice(0, limit);
+      if (limit && response.data.data && response.data.data.length > limit) {
+        response.data.data = response.data.data.slice(0, limit);
       }
 
-      return response;
+      return response.data;
     } catch (error: any) {
       if (error.status === 403) {
         console.error(

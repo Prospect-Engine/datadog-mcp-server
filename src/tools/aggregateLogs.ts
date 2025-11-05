@@ -1,4 +1,4 @@
-import { client } from "@datadog/datadog-api-client";
+import { datadogPost, getDatadogApiUrl } from "../utils/httpClient";
 
 type AggregateLogsParams = {
   filter?: {
@@ -26,43 +26,16 @@ type AggregateLogsParams = {
   };
 };
 
-let configuration: client.Configuration;
-
 export const aggregateLogs = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_LOGS_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_LOGS_SITE
-      });
-    }
-
-    // Enable any unstable operations
-    configuration.unstableOperations["v2.aggregateLogs"] = true;
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: AggregateLogsParams) => {
     try {
       const { filter, compute, groupBy, options } = params;
 
-      // Directly call with fetch to use the documented aggregation endpoint
-      // Note: API endpoints require the 'api.' subdomain prefix
-      const site = process.env.DD_LOGS_SITE || "datadoghq.com";
-      const apiUrl = `https://api.${site}/api/v2/logs/analytics/aggregate`;
-
-      const headers = {
-        "Content-Type": "application/json",
-        "DD-API-KEY": process.env.DD_API_KEY || "",
-        "DD-APPLICATION-KEY": process.env.DD_APP_KEY || ""
-      };
+      const apiUrl = `${getDatadogApiUrl("v2")}/logs/analytics/aggregate`;
 
       const body = {
         filter: filter,
@@ -71,23 +44,11 @@ export const aggregateLogs = {
         options: options
       };
 
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify(body)
-      });
+      const response = await datadogPost(apiUrl, body);
 
-      if (!response.ok) {
-        throw {
-          status: response.status,
-          message: await response.text()
-        };
-      }
-
-      const data = await response.json();
-      return data;
+      return response.data;
     } catch (error: any) {
-      if (error.status === 403) {
+      if (error.response?.status === 403) {
         console.error(
           "Authorization failed (403 Forbidden): Check that your API key and Application key are valid and have sufficient permissions to access log analytics."
         );
@@ -95,8 +56,8 @@ export const aggregateLogs = {
           "Datadog API authorization failed. Please verify your API and Application keys have the correct permissions."
         );
       } else {
-        console.error("Error aggregating logs:", error);
-        throw error;
+        console.error("Error aggregating logs:", error.message || error);
+        throw new Error(error.response?.data?.errors?.[0] || error.message || "Failed to aggregate logs");
       }
     }
   }

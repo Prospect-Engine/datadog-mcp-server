@@ -1,41 +1,25 @@
-import { client, v1 } from "@datadog/datadog-api-client";
+import { datadogGet, getDatadogApiUrl } from "../utils/httpClient";
 
 type GetDashboardsParams = {
   filterConfigured?: boolean;
   limit?: number;
 };
 
-let configuration: client.Configuration;
-
 export const getDashboards = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_SITE
-      });
-    }
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: GetDashboardsParams) => {
     try {
       const { filterConfigured, limit } = params;
 
-      const apiInstance = new v1.DashboardsApi(configuration);
+      const apiUrl = `${getDatadogApiUrl("v1")}/dashboard`;
 
-      // No parameters needed for listDashboards
-      const response = await apiInstance.listDashboards();
+      const response = await datadogGet(apiUrl);
 
       // Apply client-side filtering if specified
-      let filteredDashboards = response.dashboards || [];
+      let filteredDashboards = response.data.dashboards || [];
 
       // Apply client-side limit if specified
       if (limit && filteredDashboards.length > limit) {

@@ -1,4 +1,4 @@
-import { client, v1 } from "@datadog/datadog-api-client";
+import { datadogGet, getDatadogApiUrl } from "../utils/httpClient";
 
 type GetEventsParams = {
   start: number;
@@ -11,24 +11,9 @@ type GetEventsParams = {
   limit?: number;
 };
 
-let configuration: client.Configuration;
-
 export const getEvents = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_SITE
-      });
-    }
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: GetEventsParams) => {
@@ -44,26 +29,25 @@ export const getEvents = {
         limit
       } = params;
 
-      const apiInstance = new v1.EventsApi(configuration);
+      const queryParams = new URLSearchParams();
+      queryParams.append("start", start.toString());
+      queryParams.append("end", end.toString());
+      if (priority) queryParams.append("priority", priority);
+      if (sources) queryParams.append("sources", sources);
+      if (tags) queryParams.append("tags", tags);
+      if (unaggregated !== undefined) queryParams.append("unaggregated", String(unaggregated));
+      if (excludeAggregation !== undefined) queryParams.append("exclude_aggregate", String(excludeAggregation));
 
-      const apiParams: v1.EventsApiListEventsRequest = {
-        start: start,
-        end: end,
-        priority: priority,
-        sources: sources,
-        tags: tags,
-        unaggregated: unaggregated,
-        excludeAggregate: excludeAggregation
-      };
+      const apiUrl = `${getDatadogApiUrl("v1")}/events?${queryParams.toString()}`;
 
-      const response = await apiInstance.listEvents(apiParams);
+      const response = await datadogGet(apiUrl);
 
       // Apply client-side limit if specified
-      if (limit && response.events && response.events.length > limit) {
-        response.events = response.events.slice(0, limit);
+      if (limit && response.data.events && response.data.events.length > limit) {
+        response.data.events = response.data.events.slice(0, limit);
       }
 
-      return response;
+      return response.data;
     } catch (error) {
       console.error("Error fetching events:", error);
       throw error;

@@ -1,43 +1,23 @@
-import { client, v1 } from "@datadog/datadog-api-client";
+import { datadogGet, getDatadogApiUrl } from "../utils/httpClient";
 
 type GetMetricsParams = {
   q?: string;
 };
 
-let configuration: client.Configuration;
-
 export const getMetrics = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_METRICS_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_METRICS_SITE
-      });
-    }
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: GetMetricsParams) => {
     try {
       const { q } = params;
 
-      const apiInstance = new v1.MetricsApi(configuration);
-
       const queryStr = q || "*";
+      const apiUrl = `${getDatadogApiUrl("v1")}/search?q=${encodeURIComponent(queryStr)}`;
 
-      const apiParams: v1.MetricsApiListMetricsRequest = {
-        q: queryStr
-      };
-
-      const response = await apiInstance.listMetrics(apiParams);
-      return response;
+      const response = await datadogGet(apiUrl);
+      return response.data;
     } catch (error) {
       console.error("Error fetching metrics:", error);
       throw error;

@@ -1,4 +1,4 @@
-import { client, v1 } from "@datadog/datadog-api-client";
+import { datadogGet, getDatadogApiUrl } from "../utils/httpClient";
 
 type GetMonitorsParams = {
   groupStates?: string[];
@@ -7,47 +7,35 @@ type GetMonitorsParams = {
   limit?: number;
 };
 
-let configuration: client.Configuration;
-
 export const getMonitors = {
   initialize: () => {
-    const configOpts = {
-      authMethods: {
-        apiKeyAuth: process.env.DD_API_KEY,
-        appKeyAuth: process.env.DD_APP_KEY
-      }
-    };
-
-    configuration = client.createConfiguration(configOpts);
-
-    if (process.env.DD_METRICS_SITE) {
-      configuration.setServerVariables({
-        site: process.env.DD_METRICS_SITE
-      });
-    }
+    // No initialization needed with direct HTTP client
   },
 
   execute: async (params: GetMonitorsParams) => {
     try {
       const { groupStates, tags, monitorTags, limit } = params;
 
-      const apiInstance = new v1.MonitorsApi(configuration);
-
-      const groupStatesStr = groupStates ? groupStates.join(",") : undefined;
-
-      const apiParams: v1.MonitorsApiListMonitorsRequest = {
-        groupStates: groupStatesStr,
-        tags: tags,
-        monitorTags: monitorTags
-      };
-
-      const response = await apiInstance.listMonitors(apiParams);
-
-      if (limit && response.length > limit) {
-        return response.slice(0, limit);
+      const queryParams = new URLSearchParams();
+      if (groupStates && groupStates.length > 0) {
+        queryParams.append("group_states", groupStates.join(","));
+      }
+      if (tags) {
+        queryParams.append("tags", tags);
+      }
+      if (monitorTags) {
+        queryParams.append("monitor_tags", monitorTags);
       }
 
-      return response;
+      const apiUrl = `${getDatadogApiUrl("v1")}/monitor${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+
+      const response = await datadogGet(apiUrl);
+
+      if (limit && response.data.length > limit) {
+        return response.data.slice(0, limit);
+      }
+
+      return response.data;
     } catch (error: any) {
       if (error.status === 403) {
         console.error(
